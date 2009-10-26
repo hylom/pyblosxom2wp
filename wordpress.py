@@ -224,7 +224,7 @@ class Item(WordPressObject):
                description='', content='', post_id='', post_date='',
                comment_status='open', ping_status='open', status='publish',
                post_parent='0', menu_order='0', post_type='post',
-               post_password=''):
+               post_password='', post_name='', post_date_gmt=''):
     self.title = title
     self.link = link
     self.pubDate = pubDate
@@ -234,6 +234,7 @@ class Item(WordPressObject):
     self.content = content
     self.post_id = post_id
     self.post_date = post_date
+    self.post_date_gmt = post_date_gmt
     self.comment_status = comment_status
     self.ping_status = ping_status
     self.status = status
@@ -241,7 +242,12 @@ class Item(WordPressObject):
     self.menu_order = menu_order
     self.post_type = post_type
     self.post_password = post_password
-    self.labels = []
+    if post_name:
+      self.post_name = post_name
+    else:
+      self.post_name = self.title.replace(' ', '-')
+    self.tags = []
+    self.categories = []
     self.comments = []
 
   def _ToElementTree(self):
@@ -256,13 +262,13 @@ class Item(WordPressObject):
     self._SubElement(root, '%s:post_id' % WORDPRESS_NS_TAG, self.post_id)
     self._SubElement(root, '%s:post_date' % WORDPRESS_NS_TAG, self.post_date)
     self._SubElement(root, '%s:post_date_gmt' % WORDPRESS_NS_TAG,
-                     self.post_date)
+                     self.post_date_gmt)
     self._SubElement(root, '%s:comment_status' % WORDPRESS_NS_TAG,
                      self.comment_status)
     self._SubElement(root, '%s:ping_status' % WORDPRESS_NS_TAG,
                      self.ping_status)
     self._SubElement(root, '%s:post_name' % WORDPRESS_NS_TAG,
-                     self.title.replace(' ', '-'))
+                     self.post_name)
     self._SubElement(root, '%s:status' % WORDPRESS_NS_TAG, self.status)
     self._SubElement(root, '%s:post_parent' % WORDPRESS_NS_TAG,
                      self.post_parent)
@@ -276,10 +282,12 @@ class Item(WordPressObject):
     content = self._SubElement(root, '%s:encoded' % CONTENT_NS_TAG, '')
     content.append(CDataSection(self.content))
 
-    # A label assigned to a post is written out as a "tag" and not a "category."
-    for label in self.labels:
-      label_elem = self._SubElement(root, 'category', label)
+    for tag in self.tags:
+      label_elem = self._SubElement(root, 'category', tag)
       label_elem.set('domain', 'tag')
+
+    for category in self.categories:
+      label_elem = self._SubElement(root, 'category', category)
 
     for comment in self.comments:
       root.append(comment._ToElementTree())
