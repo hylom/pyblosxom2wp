@@ -1,7 +1,21 @@
 #!/usr/bin/env python
 # -*- encoding: utf-8 -*-
 
-"""pyblosxom2wp.py: generate XML to import pyblosxom stroy to WordPress."""
+# Copyright 2009 hylom <hylomm@gmail.com>.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0.txt
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+"""pyblosxom2wp.py: generate XML to import pyblosxom stroy to WordPress"""
 
 import sys
 import os.path
@@ -13,6 +27,9 @@ import wordpress
 from BeautifulSoup import BeautifulStoneSoup
 
 usage = "usage: %s <pyblosxom's_story_directory>" % sys.argv[0]
+title = "your blog's title"
+link = "link to your blog"
+baseurl = "your blog's base url"
 
 # main routine
 def main():
@@ -22,28 +39,27 @@ def main():
     except IndexError:
         exit(usage)
 
-    Pyblosxom2wp(story_dir).convert()
+    Pyblosxom2wp(story_dir, title, link, baseurl).convert()
 
 
 class Pyblosxom2wp(object):
-    """convert pyblosxom stories to WordPress import style XML."""
+    """main class which convert pyblosxom stories to WordPress import style XML"""
 
-    def __init__(self, story_dir):
+    def __init__(self, story_dir, title, link, baseurl):
         """initialization"""
         self._story_dir = story_dir
         self._wxr = wordpress.WordPressWxr()
         self._wxr.channel = wordpress.Channel(
-            title = "dailyhckr",
-            link = "http://hylom.net/",
-            base_blog_url = "http://hylom.net/",
-            pubDate = time.strftime("%a, %d %b %Y %H:%M:%S +0000", time.gmtime()),
-            language = "ja")
+            title=title,
+            link=link,
+            base_blog_url=baseurl,
+            pubDate=time.strftime("%a, %d %b %Y %H:%M:%S +0000", time.gmtime()),
+            language="ja")
 
     def convert(self):
         """do convert"""
         self.scan_dir(self._story_dir)
         print self._wxr.WriteXml()
-
 
     def read_text(self, filepath):
         """read textfile and returns categories, tags, title, content"""
@@ -73,6 +89,7 @@ class Pyblosxom2wp(object):
         return rdir.split(os.path.sep)
 
     def escape(self, match):
+        """escape space, tab, and cr"""
         xml = match.group(0)
 
         if xml.find("\001") != -1:
@@ -85,16 +102,14 @@ class Pyblosxom2wp(object):
         xml = xml.replace(" ", "\001");
         xml = xml.replace("\t", "\002");
         xml = xml.replace("\n", "\003");
-        
         return xml
 
     def unescape(self, xml):
+        """restore escaped string"""
         xml = xml.replace("\001", " ");
         xml = xml.replace("\002", "\t");
         xml = xml.replace("\003", "\n");
-        
         return xml
-
 
     def text_to_xml_item(self, filepath):
         """read file and generate xml"""
@@ -129,8 +144,7 @@ class Pyblosxom2wp(object):
         self._wxr.channel.items.append(post_item)
 
     def scan_dir(self, dir):
-        """scan dir and proccess"""
-
+        """scan directory and proccess file"""
         # get files
         files = dircache.listdir(dir)
         for file in files:
@@ -140,6 +154,8 @@ class Pyblosxom2wp(object):
             else:
                 self.text_to_xml_item(path)
 
+# end of subroutines
 
+# call main routine
 main()
 
